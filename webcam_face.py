@@ -75,6 +75,18 @@ def animate(U, sigma, avg, k, color='b'):
             plot_face(A, color)
             plt.draw()
             plt.pause(.5)
+            
+
+def transfer(avg, U, X):
+    registered_x = register_affine_face(avg, X)
+    answer = np.linalg.lstsq(U, (avg.reshape((136, 1)) - registered_x.reshape((136, 1))), rcond=None)[0]
+    transfered_face = avg.reshape((136, 1)) + U @ answer
+    print(transfered_face)
+    print(transfered_face.shape)
+    plot_face(transfered_face.reshape((68, 2)), )
+    plt.show()
+    
+    
 
 
 vc = cv2.VideoCapture(0)
@@ -126,24 +138,14 @@ while rval:
         face_list.append(Z)
 
 base_face = face_list[0]
+team_mate = face_list.pop()
+# averaging faces - affine register
 affine_registered_list = []
 affine_registered_list.append(base_face)
-# averaging faces - affine register
-# for i in range(1, len(face_list)):
-#     face = face_list[i]
-#     mean = np.mean(face, axis=0)
-#     of = face - mean
-#     bf = base_face - np.mean(base_face, axis=0)
-#     new_face = np.c_[of, np.zeros((68, 2))]
-#     new_face = np.repeat(new_face, repeats=2, axis=0)
-#     new_face[1::2, [2, 0]] = new_face[1::2, [0, 2]]
-#     new_face[1::2, [3, 1]] = new_face[1::2, [1, 3]]
-#
-#     new_base_face = np.ravel(bf)
-#     y = np.linalg.lstsq(new_face, new_base_face, rcond=None)[0]
-#     registered_face = new_face @ y
-#     t = np.reshape(registered_face, (68, 2))
-#     affine_registered_list.append(t)
+for i in range(1, len(face_list)):
+    face = face_list[i]
+    t = register_affine_face(base_face, face)
+    affine_registered_list.append(t)
     # plt.plot(t[:, 0], t[:, 1], 'o', color='k', markersize=3)
     # plt.plot(bf[:, 0], bf[:, 1], 'o', color='r', markersize=3)
     # plt.show()
@@ -151,20 +153,11 @@ affine_registered_list.append(base_face)
 # averaging faces - similarity register
 similarity_registered_list = []
 similarity_registered_list.append(base_face)
-# for i in range(1, len(face_list)):
-#     face = face_list[i]
-#     mean = np.mean(face, axis=0)
-#     of = face - mean
-#     bf = base_face - np.mean(base_face, axis=0)
-#     new_face = np.repeat(of, repeats=2, axis=0)
-#     new_face[1::2, 0] = new_face[1::2, 0] * -1
-#     new_face[1::2, [0, 1]] = new_face[1::2, [1, 0]]
-#
-#     new_base_face = np.ravel(bf)
-#     y = np.linalg.lstsq(new_face, new_base_face, rcond=None)[0]
-#     registered_face = new_face @ y
-#     t = np.reshape(registered_face, (68, 2))
-#     similarity_registered_list.append(t)
+
+for i in range(1, len(face_list)):
+    face = face_list[i]
+    t = registered_similarity_face(base_face, face)
+    similarity_registered_list.append(t)
     # plt.plot(t[:, 0], t[:, 1], 'o', color='b', markersize=3)
     # plt.plot(bf[:, 0], bf[:, 1], 'o', color='r', markersize=3)
     # plt.show()
@@ -175,4 +168,5 @@ avg = sum(similarity_registered_list) / len(similarity_registered_list)
 k = len(face_list) - 3
 
 U, sigma, V = PCA(similarity_registered_list, avg, k)
-animate(U, sigma, avg, k)
+# animate(U, sigma, avg, k)
+transfer(avg, U, team_mate)
