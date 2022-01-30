@@ -8,6 +8,50 @@ import numpy as np
 # import scipy
 # from scipy.spatial import ConvexHull
 import matplotlib.pyplot as plt
+from edges import edges
+
+
+def plot_face(X, color='b'):
+    "plots a face"
+
+    plt.plot(X[:, 0], X[:, 1], 'o', color=color)
+
+    for edge in edges:
+        i, j = edge  # edge from node i to node j
+
+        xi = X[i, 0]
+        yi = X[i, 1]
+        xj = X[j, 0]
+        yj = X[j, 1]
+        # draw a line between X[i] and X[j]
+        plt.plot((xi, xj), (yi, yj), '-', color=color)
+        
+def PCA(X, avg, k):
+    Z = np.zeros((136, len(face_list)))
+    for i in range(len(face_list)):
+        Z[:, i] = X[i].reshape((1, 136)) - avg.reshape((1, 136))
+    U, sigma, V = np.linalg.svd(Z, full_matrices=False)
+    U, sigma, V = U[:,0:k], sigma[0:k], V[0:k, :]
+    return U, sigma, V
+
+def animate(U, sigma, avg, k, color='b'):
+    for i in range(k):
+        sig = sigma[i]
+        rng = np.linspace(-sig, sig, 5)
+        for alpha in rng:
+            plt.cla()
+            A = avg + (alpha * U[:, i].reshape(68, 2))
+            plot_face(A, color)
+            plt.draw()
+            plt.pause(.5)
+    
+    
+    
+
+
+
+
+
 
 vc = cv2.VideoCapture(0)
 
@@ -103,39 +147,13 @@ for i in range(1, len(face_list)):
     # plt.show()
 
 avg = sum(similarity_registered_list) / len(similarity_registered_list)
-Z_affine = np.zeros((136, len(face_list)))
-Z_similarity = np.zeros((136, len(face_list)))
-
-for i in range(len(face_list)):
-    Z_affine[:, i] = affine_registered_list[i].reshape((1, 136)) - avg.reshape((1, 136))
-    Z_similarity[:, i] = similarity_registered_list[i].reshape((1, 136)) - avg.reshape((1, 136))
-
-U_affine, s_affine, V_affine = np.linalg.svd(Z_affine, full_matrices=False)
-U_similarity, s_similarity, V_similarity = np.linalg.svd(Z_similarity, full_matrices=False)
 
 # TODO: Change k
 k = len(face_list) - 3
-U_affine, sigma_affine, V_affine = U_affine[:,
-                                            0:k], np.diag(s_affine)[0:k, 0:k], V_affine[0:k, :]
-U_similarity, sigma_similarity, V_similarity = U_similarity[:,
-                                                            0:k], np.diag(s_similarity)[0:k, 0:k], V_similarity[0:k, :]
 
-for i in range(k):
-    sig = s_affine[i]
-    rng = (-sig, sig, 5)
-    for alpha in rng:
-        plt.cla()
-        A = avg + (alpha * U_affine[:, i].reshape(68, 2))
-        plt.plot(A[:, 0], A[:, 1], 'o', color='b', markersize=3)
-        plt.draw()
-        plt.pause(.5)
+U, sigma, V = PCA(similarity_registered_list, avg, k)
+animate(U, sigma, avg, k)
+
+
         
-for i in range(k):
-    sig = s_similarity[i]
-    rng = (-sig, sig, 5)
-    for alpha in rng:
-        plt.cla()
-        A = avg + (alpha * U_affine[:, i].reshape(68, 2))
-        plt.plot(A[:, 0], A[:, 1], 'o', color='b', markersize=3)
-        plt.draw()
-        plt.pause(.5)
+
