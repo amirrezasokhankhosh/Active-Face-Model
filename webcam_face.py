@@ -11,6 +11,28 @@ import matplotlib.pyplot as plt
 from edges import edges
 
 
+def collect_faces():
+    faces = []
+    detector = dlib.get_frontal_face_detector()
+    predictor = dlib.shape_predictor('shape_predictor_68_face_landmarks.dat')
+
+    for i in range(1, 14):
+        path = 'D:\\Uni stuff\\LA\\LA-prj\\' + str(i) + '.jpg'
+        img = cv2.imread(path, cv2.IMREAD_COLOR)
+        dets = detector(img, 1)
+        for k, d in enumerate(dets):
+            shape = predictor(img, d)
+
+            X = np.array([(shape.part(i).x, shape.part(i).y) for i in range(shape.num_parts)])
+            theta = np.radians(180)
+            c, s = np.cos(theta), np.sin(theta)
+            R = np.array(((c, -s), (s, c)))
+            Z = X @ R
+            faces.append(Z)
+
+    return faces
+
+
 def plot_face(X, color='b'):
     "plots a face"
 
@@ -75,7 +97,7 @@ def animate(U, sigma, avg, k, color='b'):
             plot_face(A, color)
             plt.draw()
             plt.pause(.5)
-            
+
 
 def transfer(avg, U, X):
     registered_x = register_affine_face(avg, X)
@@ -85,58 +107,9 @@ def transfer(avg, U, X):
     print(transfered_face.shape)
     plot_face(transfered_face.reshape((68, 2)), )
     plt.show()
-    
-    
 
 
-vc = cv2.VideoCapture(0)
-
-if vc.isOpened():  # try to get the first frame
-    rval, frame = vc.read()
-else:
-    rval = False
-
-detector = dlib.get_frontal_face_detector()
-predictor = dlib.shape_predictor('shape_predictor_68_face_landmarks.dat')
-
-i = 0
-
-face_list = []
-
-while rval:
-
-    rval, img = vc.read()
-    # print(rval)
-    i += 1
-    if i % 3 != 1:
-        pass
-    else:
-
-        dets = detector(img, 1)
-
-    for k, d in enumerate(dets):
-
-        shape = predictor(img, d)
-
-        X = np.array([(shape.part(i).x, shape.part(i).y)
-                      for i in range(shape.num_parts)])
-        theta = np.radians(180)
-        c, s = np.cos(theta), np.sin(theta)
-        R = np.array(((c, -s), (s, c)))
-        Z = X @ R
-        for x in X:
-            cv2.circle(img, (x[0], x[1]), 2, (0, 0, 255))
-
-    cv2.imshow('', img)
-
-    key = cv2.waitKey(1) & 0xFF
-
-    if key == ord('q'):
-        break
-    elif key == ord(' '):
-        # print('X =', X)
-        face_list.append(Z)
-
+face_list = collect_faces()
 base_face = face_list[0]
 team_mate = face_list.pop()
 # averaging faces - affine register
@@ -146,9 +119,7 @@ for i in range(1, len(face_list)):
     face = face_list[i]
     t = register_affine_face(base_face, face)
     affine_registered_list.append(t)
-    # plt.plot(t[:, 0], t[:, 1], 'o', color='k', markersize=3)
-    # plt.plot(bf[:, 0], bf[:, 1], 'o', color='r', markersize=3)
-    # plt.show()
+
 
 # averaging faces - similarity register
 similarity_registered_list = []
@@ -158,15 +129,12 @@ for i in range(1, len(face_list)):
     face = face_list[i]
     t = registered_similarity_face(base_face, face)
     similarity_registered_list.append(t)
-    # plt.plot(t[:, 0], t[:, 1], 'o', color='b', markersize=3)
-    # plt.plot(bf[:, 0], bf[:, 1], 'o', color='r', markersize=3)
-    # plt.show()
 
 avg = sum(similarity_registered_list) / len(similarity_registered_list)
 
 # TODO: Change k
 k = len(face_list) - 3
-
+affine_avg = sum(affine_registered_list) / len(affine_registered_list)
 U, sigma, V = PCA(similarity_registered_list, avg, k)
 # animate(U, sigma, avg, k)
-transfer(avg, U, team_mate)
+transfer(affine_avg, U, team_mate)
