@@ -110,6 +110,8 @@ def transfer(avg, U, X):
 
 
 face_list = collect_faces()
+for i in range(5):
+    plot_face(face_list[i], color='g')
 base_face = face_list[0]
 team_mate = face_list.pop()
 # averaging faces - affine register
@@ -119,6 +121,9 @@ for i in range(1, len(face_list)):
     face = face_list[i]
     t = register_affine_face(base_face, face)
     affine_registered_list.append(t)
+    plot_face(t, color='r')
+    plot_face(face, color='k')
+    plt.show()
 
 
 # averaging faces - similarity register
@@ -129,12 +134,16 @@ for i in range(1, len(face_list)):
     face = face_list[i]
     t = registered_similarity_face(base_face, face)
     similarity_registered_list.append(t)
+    plot_face(t, color='b')
+    plot_face(face, color='k')
+    plt.show()
 
 avg = sum(similarity_registered_list) / len(similarity_registered_list)
+plot_face(avg, color='orange')
 
 # TODO: Change k
-k = len(face_list) - 3
+k = 16
 affine_avg = sum(affine_registered_list) / len(affine_registered_list)
 U, sigma, V = PCA(similarity_registered_list, avg, k)
-# animate(U, sigma, avg, k)
+animate(U, sigma, avg, k)
 transfer(affine_avg, U, team_mate)
