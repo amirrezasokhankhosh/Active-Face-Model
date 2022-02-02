@@ -101,16 +101,17 @@ def animate(U, sigma, avg, k, color='b'):
 
 def transfer(avg, U, X):
     registered_x = register_affine_face(avg, X)
-    answer = np.linalg.lstsq(U, (avg.reshape((136, 1)) - registered_x.reshape((136, 1))), rcond=None)[0]
+    answer = np.linalg.lstsq(U, (registered_x.reshape((136, 1)) - avg.reshape((136, 1))), rcond=None)[0]
     transfered_face = avg.reshape((136, 1)) + U @ answer
-    plot_face(transfered_face.reshape((68, 2)), )
+    plt.cla()
+    plot_face(transfered_face.reshape((68, 2)), color='orange')
     plt.show()
 
 
 face_list = collect_faces()
-for i in range(5):
-    plot_face(face_list[i], color='g')
-    plt.show()
+# for i in range(5):
+#     plot_face(face_list[i], color='g')
+#     plt.show()
 base_face = face_list[0]
 team_mate = face_list.pop()
 print(len(face_list))
@@ -122,9 +123,12 @@ for i in range(1, len(face_list)):
     face = face_list[i]
     t = register_affine_face(base_face, face)
     affine_registered_list.append(t)
-    # plot_face(t, color='r')
-    # plot_face(bf, color='k')
-    # plt.show()
+
+# for i in range(5):
+#     plot_face(affine_registered_list[i], color='r')
+#     bf = base_face - np.mean(base_face, axis=0)
+#     plot_face(bf, color='k')
+#     plt.show()
 
 
 # averaging faces - similarity register
@@ -140,13 +144,15 @@ for i in range(1, len(face_list)):
     # plot_face(bf, color='k')
     # plt.show()
 
-avg = sum(similarity_registered_list) / len(similarity_registered_list)
-plot_face(avg, color='orange')
-plt.show()
+affine_avg = sum(affine_registered_list) / len(similarity_registered_list)
+# plot_face(affine_avg, color='b')
+# plt.show()
+
+# plot_face(team_mate, color='r')
+# plt.show()
 
 # TODO: Change k
 k = 16
-affine_avg = sum(affine_registered_list) / len(affine_registered_list)
-U, sigma, V = PCA(similarity_registered_list, avg, k)
-# animate(U, sigma, avg, k)
+U, sigma, V = PCA(affine_registered_list, affine_avg, k)
+# animate(U, sigma, affine_avg, k)
 transfer(affine_avg, U, team_mate)
