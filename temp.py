@@ -1,7 +1,8 @@
 import numpy as np
 
-arr = [1, 2, 3, 4]
+a = np.array([[1, 0], [0, -1]])
+b = np.array([[1, 2], [3, 4], [5, 6], [7, 8]])
 
-tem = arr.pop()
-print(tem)
-print(arr)
+
+
+print( (a @ b.T).T)
